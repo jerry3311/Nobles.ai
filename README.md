@@ -13,7 +13,7 @@ Requirements: Node.js 20 or newer, npm, and Docker Desktop (or another PostgreSQ
 5. Start the app with `npm start`.
 6. Open <http://localhost:8080>.
 
-The server creates its database tables automatically at startup. The first visit requires creating an account. Registration and login require a username of 3–24 letters, numbers, or underscores, and a password meeting the displayed strength rules.
+The server creates its database tables automatically at startup. The first visit requires creating an account. Registration and login require a username of 3–24 letters, numbers, or underscores; new account passwords must be at least 8 characters.
 
 Keep the backend running while using the app. When opening `index.html` directly or through a common local preview port, the page sends API requests to `http://localhost:8080`; otherwise it uses the page's own origin.
 
