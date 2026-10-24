@@ -84,13 +84,9 @@ const createSession = async (client, userId) => {
 const register = async (body) => {
   const username = trim(field(body, 'username')).toLowerCase();
   const password = field(body, 'password');
-  const validPassword = password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    /[^A-Za-z0-9]/.test(password);
+  const validPassword = password.length >= 8;
   if (!/^[a-z0-9_]{3,24}$/.test(username) || !validPassword) {
-    throw new ApiError(400, 'Enter a valid username and a password that meets all the requirements.');
+    throw new ApiError(400, 'Enter a valid username and a password of at least 8 characters.');
   }
 
   const client = await pool.connect();
