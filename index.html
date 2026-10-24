@@ -125,18 +125,24 @@
   }
 
   .topic-list{ list-style: none; display: flex; flex-direction: column; gap: 6px; }
-  .topic-list li{
+  .topic-list button{
+    display: block;
+    width: 100%;
+    font: inherit;
     font-size: .81rem;
     padding: 8px 10px 8px 12px;
     border-radius: 0 8px 8px 0;
+    border: 0;
     border-left: 3px solid var(--blue-400);
     background: rgba(255, 255, 255, .06);
     color: #d7e6ff;
+    text-align: left;
     text-transform: capitalize;
     cursor: pointer;
     transition: background .15s, transform .15s, color .15s;
   }
-  .topic-list li:hover{
+  .topic-list button:hover,
+  .topic-list button:focus-visible{
     background: rgba(74, 141, 240, .3);
     color: #fff;
     transform: translateX(3px);
@@ -216,6 +222,32 @@
     letter-spacing: .04em;
     color: #fff;
   }
+  .chat-title-group{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .menu-toggle{
+    display: none;
+    width: 38px;
+    height: 38px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(255, 255, 255, .12);
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .menu-toggle:hover{ background: rgba(255, 255, 255, .22); }
+  .menu-toggle:focus-visible,
+  .sidebar-backdrop:focus-visible{
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+  .sidebar-backdrop{ display: none; }
   .chat-head p{
     margin-top: 4px;
     font-size: .7rem;
@@ -668,8 +700,51 @@
 
   @media (max-width: 920px){
     body{ padding: 0; }
-    .app{ height: 100vh; border-radius: 0; grid-template-columns: 1fr; }
-    .sidebar{ display: none; }
+    .app{
+      position: relative;
+      height: 100vh;
+      height: 100dvh;
+      border-radius: 0;
+      grid-template-columns: 1fr;
+      overflow: visible;
+    }
+    .menu-toggle{ display: inline-flex; }
+    .sidebar{
+      position: fixed;
+      z-index: 101;
+      inset: 0 auto 0 0;
+      width: min(320px, 88vw);
+      max-height: 100vh;
+      max-height: 100dvh;
+      padding-top: max(22px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      border-right: 3px solid var(--blue-500);
+      box-shadow: 16px 0 40px rgba(8, 36, 92, .3);
+      transform: translateX(-105%);
+      visibility: hidden;
+      transition: transform .22s ease, visibility .22s;
+    }
+    .app.menu-open .sidebar{
+      transform: translateX(0);
+      visibility: visible;
+    }
+    .sidebar-backdrop{
+      position: fixed;
+      z-index: 100;
+      inset: 0;
+      display: block;
+      padding: 0;
+      border: 0;
+      background: rgba(5, 20, 48, .52);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .22s ease, visibility .22s;
+    }
+    .app.menu-open .sidebar-backdrop{
+      opacity: 1;
+      visibility: visible;
+    }
+    body.menu-open{ overflow: hidden; }
     .chat-head{ padding: 12px 16px; }
     .head-actions button{ padding: 6px 10px; font-size: .72rem; }
     .messages{ padding: 16px 14px 10px; }
@@ -685,8 +760,14 @@
     .bubble{ font-size: .86rem; }
     .composer button{ padding: 0 18px; }
     .head-actions{ gap: 6px; }
-    .head-actions button{ padding: 6px 9px; font-size: .7rem; }
+    .head-actions button{ padding: 5px 7px; font-size: .64rem; }
+    .chat-head{ gap: 7px; padding: 10px; }
+    .chat-title-group{ gap: 7px; }
+    .menu-toggle{ width: 34px; height: 34px; }
     .auth-card{ padding: 26px 22px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .sidebar, .sidebar-backdrop{ transition: none; }
   }
 </style>
 </head>
@@ -738,7 +819,9 @@
 
 <div class="app">
 
-  <aside class="sidebar">
+  <button type="button" class="sidebar-backdrop" id="sidebarBackdrop" aria-label="Close notice board menu" tabindex="-1"></button>
+
+  <aside class="sidebar" id="sidebar" aria-hidden="false">
 
     <div class="brand">
       <img class="crest" src="./Screenshot%202026-10-19%20024928.png" alt="Nobles International School crest" />
@@ -778,9 +861,16 @@
   <main class="chat">
 
     <header class="chat-head">
-      <div>
-        <h2>Nobles Ai</h2>
-        <p id="connStatus" class="online">Online · Nobles International School</p>
+      <div class="chat-title-group">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open notice board menu" aria-controls="sidebar" aria-expanded="false" title="Notice board and school information">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+        <div>
+          <h2>Nobles Ai</h2>
+          <p id="connStatus" class="online">Online · Nobles International School</p>
+        </div>
       </div>
       <div class="head-actions">
         <button type="button" id="topicsBtn">Topics</button>
@@ -847,6 +937,10 @@ const els = {
   send:         document.getElementById('sendBtn'),
   status:       document.getElementById('connStatus'),
   topicList:    document.getElementById('topicList'),
+  app:          document.querySelector('.app'),
+  sidebar:      document.getElementById('sidebar'),
+  menuToggle:   document.getElementById('menuToggle'),
+  sidebarBackdrop: document.getElementById('sidebarBackdrop'),
   learned:      document.getElementById('learnedCount'),
   topicsBtn:    document.getElementById('topicsBtn'),
   helpBtn:      document.getElementById('helpBtn'),
@@ -1234,13 +1328,37 @@ function renderTopics(list){
   els.topicList.innerHTML = '';
   list.forEach(name => {
     const li = document.createElement('li');
-    li.textContent = String(name).replace(/_/g, ' ');
-    li.addEventListener('click', () => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = String(name).replace(/_/g, ' ');
+    button.addEventListener('click', () => {
       els.input.value = String(name).replace(/_/g, ' ');
+      closeSidebarMenu();
       els.input.focus();
     });
+    li.appendChild(button);
     els.topicList.appendChild(li);
   });
+}
+
+function setSidebarMenuOpen(open){
+  const isMobile = window.matchMedia('(max-width: 920px)').matches;
+  const menuOpen = isMobile && open;
+  els.app.classList.toggle('menu-open', menuOpen);
+  document.body.classList.toggle('menu-open', menuOpen);
+  els.menuToggle.setAttribute('aria-expanded', String(menuOpen));
+  els.menuToggle.setAttribute('aria-label', menuOpen ? 'Close notice board menu' : 'Open notice board menu');
+  els.sidebar.setAttribute('aria-hidden', String(isMobile && !menuOpen));
+  if (menuOpen){
+    const firstTopic = els.topicList.querySelector('button');
+    if (firstTopic) firstTopic.focus();
+  }
+}
+
+function closeSidebarMenu(){
+  const wasOpen = els.app.classList.contains('menu-open');
+  setSidebarMenuOpen(false);
+  if (wasOpen) els.menuToggle.focus();
 }
 
 const READY_REPLIES = [
@@ -1400,6 +1518,18 @@ els.teachBtn.addEventListener('click', openTeach);
 els.teachSave.addEventListener('click', saveTeach);
 els.teachCancel.addEventListener('click', closeTeach);
 els.logoutBtn.addEventListener('click', handleLogout);
+els.menuToggle.addEventListener('click', () => {
+  setSidebarMenuOpen(!els.app.classList.contains('menu-open'));
+});
+els.sidebarBackdrop.addEventListener('click', closeSidebarMenu);
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && els.app.classList.contains('menu-open')){
+    closeSidebarMenu();
+    els.menuToggle.focus();
+  }
+});
+window.matchMedia('(max-width: 920px)').addEventListener('change', closeSidebarMenu);
+setSidebarMenuOpen(false);
 
 els.tabSignup.addEventListener('click', () => switchAuthMode('signup'));
 els.tabLogin.addEventListener('click',  () => switchAuthMode('login'));
