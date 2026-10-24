@@ -619,57 +619,6 @@
   }
   .pw-toggle:hover{ background: var(--blue-50); }
 
-  .pw-strength{
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: -2px;
-  }
-  .pw-strength .bar{
-    height: 6px;
-    border-radius: 3px;
-    background: var(--blue-100);
-    overflow: hidden;
-  }
-  .pw-strength .fill{
-    height: 100%;
-    width: 0%;
-    border-radius: 3px;
-    background: var(--red);
-    transition: width .25s, background .25s;
-  }
-  .pw-strength .label{
-    display: flex;
-    justify-content: space-between;
-    font-size: .7rem;
-    color: var(--muted);
-  }
-  .pw-strength .label strong{ color: var(--ink); font-weight: 600; }
-
-  .pw-rules{
-    list-style: none;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 12px;
-    padding: 4px 2px 2px;
-  }
-  .pw-rules li{
-    font-size: .7rem;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: color .15s;
-  }
-  .pw-rules li::before{
-    content: '○';
-    font-weight: 700;
-    color: #b3c6e0;
-    flex: none;
-  }
-  .pw-rules li.ok{ color: var(--green-dark); }
-  .pw-rules li.ok::before{ content: '✓'; color: var(--green); }
-
   .auth-error{
     font-size: .78rem;
     line-height: 1.4;
@@ -711,6 +660,11 @@
     margin-top: 4px;
   }
   .auth-hint b{ color: var(--blue-700); font-weight: 600; }
+  .auth-password-hint{
+    font-size: .7rem;
+    color: var(--muted);
+    margin: -6px 2px 0;
+  }
 
   @media (max-width: 920px){
     body{ padding: 0; }
@@ -733,7 +687,6 @@
     .head-actions{ gap: 6px; }
     .head-actions button{ padding: 6px 9px; font-size: .7rem; }
     .auth-card{ padding: 26px 22px 22px; }
-    .pw-rules{ grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -761,29 +714,14 @@
       </div>
 
       <div class="auth-field has-toggle">
-        <input type="password" id="authPass" placeholder="Password" autocomplete="new-password" maxlength="64" />
+        <input type="password" id="authPass" placeholder="Password" autocomplete="new-password" minlength="8" />
         <button type="button" class="pw-toggle" id="pwToggle">Show</button>
       </div>
+      <p class="auth-password-hint" id="passwordHint">Password must be at least 8 characters.</p>
 
       <div class="auth-field" id="confirmWrap">
-        <input type="password" id="authConfirm" placeholder="Confirm password" autocomplete="new-password" maxlength="64" />
+        <input type="password" id="authConfirm" placeholder="Confirm password" autocomplete="new-password" minlength="8" />
       </div>
-
-      <div class="pw-strength" id="pwStrengthBox">
-        <div class="bar"><div class="fill" id="pwFill"></div></div>
-        <div class="label">
-          <span>Password strength</span>
-          <strong id="pwLabel">—</strong>
-        </div>
-      </div>
-
-      <ul class="pw-rules" id="pwRules">
-        <li data-rule="length">At least 8 characters</li>
-        <li data-rule="upper">One uppercase letter</li>
-        <li data-rule="lower">One lowercase letter</li>
-        <li data-rule="digit">One number</li>
-        <li data-rule="symbol">One symbol</li>
-      </ul>
 
       <p class="auth-error" id="authError"></p>
 
@@ -930,10 +868,7 @@ const els = {
   tabSignup:    document.getElementById('tabSignup'),
   tabLogin:     document.getElementById('tabLogin'),
   confirmWrap:  document.getElementById('confirmWrap'),
-  pwStrengthBox:document.getElementById('pwStrengthBox'),
-  pwRules:      document.getElementById('pwRules'),
-  pwFill:       document.getElementById('pwFill'),
-  pwLabel:      document.getElementById('pwLabel'),
+  passwordHint: document.getElementById('passwordHint'),
   pwToggle:     document.getElementById('pwToggle')
 };
 
@@ -1012,40 +947,6 @@ async function apiRequest(path, options = {}){
   return data;
 }
 
-const PW_RULES = {
-  length: pw => pw.length >= 8,
-  upper:  pw => /[A-Z]/.test(pw),
-  lower:  pw => /[a-z]/.test(pw),
-  digit:  pw => /[0-9]/.test(pw),
-  symbol: pw => /[^A-Za-z0-9]/.test(pw)
-};
-
-function meetsAllRules(pw){
-  return Object.values(PW_RULES).every(fn => fn(pw));
-}
-
-function scorePassword(pw){
-  if (!pw) return 0;
-  let s = 0;
-  if (pw.length >= 8)  s += 20;
-  if (pw.length >= 12) s += 15;
-  if (pw.length >= 16) s += 10;
-  if (/[a-z]/.test(pw)) s += 10;
-  if (/[A-Z]/.test(pw)) s += 15;
-  if (/[0-9]/.test(pw)) s += 10;
-  if (/[^A-Za-z0-9]/.test(pw)) s += 15;
-  if (/(.)\1{2,}/.test(pw)) s -= 10;
-  if (/^(?:123|abc|qwe|pass|admin|user|nobles)/i.test(pw)) s -= 15;
-  return Math.max(0, Math.min(100, s));
-}
-
-function pwLevel(score){
-  if (score < 30) return { label: 'Weak',   color: '#d9465b', width: 25 };
-  if (score < 55) return { label: 'Fair',   color: '#e8a33d', width: 50 };
-  if (score < 78) return { label: 'Good',   color: '#c9a800', width: 75 };
-  return           { label: 'Strong', color: '#1fc16b', width: 100 };
-}
-
 function isValidUsername(name){
   return /^[a-zA-Z0-9_]{3,24}$/.test(name);
 }
@@ -1058,8 +959,7 @@ function switchAuthMode(mode){
   els.tabLogin.classList.toggle('active', !isSignup);
 
   els.confirmWrap.style.display = isSignup ? '' : 'none';
-  els.pwStrengthBox.style.display = isSignup ? '' : 'none';
-  els.pwRules.style.display = isSignup ? '' : 'none';
+  els.passwordHint.style.display = isSignup ? '' : 'none';
 
   els.authSubmit.textContent = isSignup ? 'Create account' : 'Login';
   els.authPass.setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
@@ -1069,31 +969,10 @@ function switchAuthMode(mode){
   els.authPass.classList.remove('invalid');
   els.authConfirm.classList.remove('invalid');
 
-  if (!isSignup){
-    els.pwFill.style.width = '0%';
-    els.pwLabel.textContent = '—';
-    els.pwRules.querySelectorAll('li').forEach(li => li.classList.remove('ok'));
-  }
 }
 
 function showAuthError(msg){
   els.authError.textContent = msg;
-}
-
-function updatePasswordUI(){
-  const pw = els.authPass.value;
-
-  els.pwRules.querySelectorAll('li').forEach(li => {
-    const rule = li.dataset.rule;
-    li.classList.toggle('ok', PW_RULES[rule] ? PW_RULES[rule](pw) : false);
-  });
-
-  const score = scorePassword(pw);
-  const level = pwLevel(score);
-  els.pwFill.style.width = level.width + '%';
-  els.pwFill.style.background = level.color;
-  els.pwLabel.textContent = level.label;
-  els.pwLabel.style.color = level.color;
 }
 
 async function handleAuthSubmit(e){
@@ -1121,8 +1000,8 @@ async function doSignup(username, password){
   }
   els.authUser.classList.remove('invalid');
 
-  if (!meetsAllRules(password)){
-    showAuthError('Password does not meet all the requirements below.');
+  if (password.length < 8){
+    showAuthError('Password must be at least 8 characters.');
     els.authPass.classList.add('invalid');
     els.authPass.focus();
     return;
@@ -1527,7 +1406,6 @@ els.tabLogin.addEventListener('click',  () => switchAuthMode('login'));
 
 els.authForm.addEventListener('submit', handleAuthSubmit);
 
-els.authPass.addEventListener('input', updatePasswordUI);
 els.authConfirm.addEventListener('input', () => els.authConfirm.classList.remove('invalid'));
 els.authUser.addEventListener('input', () => els.authUser.classList.remove('invalid'));
 
@@ -1583,7 +1461,6 @@ els.teachA.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventD
       els.status.classList.remove('online');
     });
 
-  updatePasswordUI();
 })();
 
 </script>
